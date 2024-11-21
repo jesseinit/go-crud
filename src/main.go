@@ -23,6 +23,7 @@ type Book struct {
 var books []Book
 
 func GetBooks(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(books)
 }
 
@@ -34,6 +35,7 @@ func GetBook(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(&Book{})
 }
 
@@ -41,11 +43,13 @@ func CreateBook(w http.ResponseWriter, r *http.Request) {
 	var book Book
 	_ = json.NewDecoder(r.Body).Decode(&book)
 	books = append(books, book)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(book)
 }
 
 func UpdateBook(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-
+	w.Header().Set("Content-Type", "application/json")
 	for index, item := range books {
 		if item.ID == params["id"] {
 			books = append(books[:index], books[index+1:]...)
@@ -67,14 +71,19 @@ func DeleteBook(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 	}
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(books)
 }
 
 func main() {
 	router := mux.NewRouter()
 
-	books = append(books, Book{ID: "1", Title: "Book One", Author: "John Doe", Publisher: &Company{Name: "Company One", Address: "Address One"}})
-	books = append(books, Book{ID: "2", Title: "Book Two", Author: "Jane Doe", Publisher: &Company{Name: "Company Two", Address: "Address Two"}})
+	books = append(books, Book{
+		ID: "1", Title: "Book One", Author: "John Doe",
+		Publisher: &Company{Name: "Company One", Address: "Address One"}})
+	books = append(books, Book{
+		ID: "2", Title: "Book Two", Author: "Jane Doe",
+		Publisher: &Company{Name: "Company Two", Address: "Address Two"}})
 
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "Hello, World!")
