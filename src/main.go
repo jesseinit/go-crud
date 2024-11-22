@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -25,7 +26,6 @@ type Book struct {
 var books []Book
 
 func GetBooks(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(books)
 }
 
@@ -37,21 +37,19 @@ func GetBook(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(&Book{})
+	w.WriteHeader(http.StatusNotFound)
+	json.NewEncoder(w).Encode(map[string]string{"error": "Book not found"})
 }
 
 func CreateBook(w http.ResponseWriter, r *http.Request) {
 	var book Book
 	_ = json.NewDecoder(r.Body).Decode(&book)
 	books = append(books, book)
-	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(book)
 }
 
 func UpdateBook(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	w.Header().Set("Content-Type", "application/json")
 	for index, item := range books {
 		if item.ID == params["id"] {
 			books = append(books[:index], books[index+1:]...)
@@ -73,12 +71,53 @@ func DeleteBook(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 	}
-	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(books)
+}
+
+type logginResponseWriter struct {
+	http.ResponseWriter
+	statusCode int
+	size       int
+}
+
+func (lwr *logginResponseWriter) WriteHeader(code int) {
+	lwr.statusCode = code
+	lwr.ResponseWriter.WriteHeader(code)
+}
+func (lwr *logginResponseWriter) Write(data []byte) (int, error) {
+	size, err := lwr.ResponseWriter.Write(data)
+	lwr.size += size
+	return size, err
+}
+
+func LoggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+
+		lrw := &logginResponseWriter{ResponseWriter: w, statusCode: http.StatusOK}
+		lrw.Header().Set("Content-Type", "application/json")
+		next.ServeHTTP(lrw, r)
+
+		// Log in access log format
+		log.Printf("%s - %s [%s] \"%s %s %s\" %d %d \"%s\" \"%s\"",
+			r.RemoteAddr, // Client IP and port
+			"-",          // User identifier (typically not available in web apps)
+			start.Format("02/Jan/2006:15:04:05 -0700"), // Timestamp
+			r.Method,       // HTTP method
+			r.URL.Path,     // URL path
+			r.Proto,        // HTTP version
+			lrw.statusCode, // Response status code
+			lrw.size,       // Response size in bytes
+			r.Referer(),    // Referer header
+			r.UserAgent(),  // User-Agent header
+		)
+	})
 }
 
 func main() {
 	router := mux.NewRouter()
+
+	router.Use(LoggingMiddleware)
 
 	books = append(books, Book{
 		ID: "1", Title: "Book One", Author: "John Doe",
@@ -92,10 +131,10 @@ func main() {
 	})
 
 	router.HandleFunc("/books", GetBooks).Methods(http.MethodGet)
-	router.HandleFunc("/books{id}", GetBook).Methods(http.MethodGet)
+	router.HandleFunc("/books/{id}", GetBook).Methods(http.MethodGet)
 	router.HandleFunc("/books", CreateBook).Methods(http.MethodPost)
-	router.HandleFunc("/books{id}", UpdateBook).Methods(http.MethodPut)
-	router.HandleFunc("/books{id}", DeleteBook).Methods(http.MethodDelete)
+	router.HandleFunc("/books/{id}", UpdateBook).Methods(http.MethodPut)
+	router.HandleFunc("/books/{id}", DeleteBook).Methods(http.MethodDelete)
 
 	PORT := os.Getenv("SERVER_PORT")
 	if PORT == "" {
