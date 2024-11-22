@@ -8,7 +8,7 @@ type Company struct {
 }
 
 type Book struct {
-	ID        string   `json:"id,omitempty"`
+	ID        string   `json:"-" bson:"_id,omitempty"`
 	Title     string   `json:"title,omitempty"`
 	Author    string   `json:"author,omitempty"`
 	Publisher *Company `json:"publisher"`

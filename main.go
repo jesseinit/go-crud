@@ -1,29 +1,24 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/gorilla/mux"
+	"go.mongodb.org/mongo-driver/mongo"
 )
+
+var client *mongo.Client
+
+func init() {
+	MONGODB_URL := GetDotEnvVariable("MONGODB_URL")
+	client = ConnectToMongoDB(MONGODB_URL)
+}
 
 func main() {
 	router := mux.NewRouter()
 
 	router.Use(LoggingMiddleware)
-
-	books = append(books, Book{
-		ID: "1", Title: "Book One", Author: "John Doe",
-		Publisher: &Company{Name: "Company One", Address: "Address One"}})
-	books = append(books, Book{
-		ID: "2", Title: "Book Two", Author: "Jane Doe",
-	})
-
-	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, "Hello, World!")
-	})
 
 	router.HandleFunc("/books", GetBooks).Methods(http.MethodGet)
 	router.HandleFunc("/books/{id}", GetBook).Methods(http.MethodGet)
@@ -31,7 +26,7 @@ func main() {
 	router.HandleFunc("/books/{id}", UpdateBook).Methods(http.MethodPut)
 	router.HandleFunc("/books/{id}", DeleteBook).Methods(http.MethodDelete)
 
-	PORT := os.Getenv("SERVER_PORT")
+	PORT := GetDotEnvVariable("SERVER_PORT")
 	if PORT == "" {
 		PORT = ":8082"
 	}

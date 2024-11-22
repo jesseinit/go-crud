@@ -1,9 +1,15 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
+	"os"
 	"time"
+
+	"github.com/joho/godotenv"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func (lwr *logginResponseWriter) WriteHeader(code int) {
@@ -35,4 +41,26 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 			r.UserAgent(),
 		)
 	})
+}
+
+func ConnectToMongoDB(uri string) *mongo.Client {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
+	if err != nil {
+		log.Fatalf("Failed to connect to MongoDB: %v", err)
+	}
+
+	log.Println("Connected to MongoDB")
+
+	return client
+}
+
+func GetDotEnvVariable(key string) string {
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
+	return os.Getenv(key)
 }
