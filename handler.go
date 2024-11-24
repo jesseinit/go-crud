@@ -13,7 +13,7 @@ import (
 )
 
 func GetBooks(w http.ResponseWriter, r *http.Request) {
-	collection := client.Database("myNewDatabase").Collection("books")
+	collection := database.Collection("books")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -37,7 +37,7 @@ func GetBooks(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetBook(w http.ResponseWriter, r *http.Request) {
-	collection := client.Database("myNewDatabase").Collection("books")
+	collection := database.Collection("books")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -71,7 +71,7 @@ func CreateBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	collection := client.Database("myNewDatabase").Collection("books")
+	collection := database.Collection("books")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -98,7 +98,7 @@ func UpdateBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	collection := client.Database("myNewDatabase").Collection("books")
+	collection := database.Collection("books")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -126,7 +126,7 @@ func DeleteBook(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	bookID := params["id"]
 
-	collection := client.Database("myNewDatabase").Collection("books")
+	collection := database.Collection("books")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 

@@ -9,10 +9,12 @@ import (
 )
 
 var client *mongo.Client
+var database *mongo.Database
 
 func init() {
 	MONGODB_URL := GetDotEnvVariable("MONGODB_URL")
 	client = ConnectToMongoDB(MONGODB_URL)
+	database = client.Database("myNewDatabase")
 }
 
 func main() {
